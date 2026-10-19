@@ -1,0 +1,30 @@
+[
+  {
+    "id": "demo-tp1",
+    "name": "臺北市中山區",
+    "city": "臺北市",
+    "district": "中山區",
+    "note": "門市諮詢需求"
+  },
+  {
+    "id": "demo-tp2",
+    "name": "臺北市文山區",
+    "city": "臺北市",
+    "district": "文山區",
+    "note": "門市諮詢需求"
+  },
+  {
+    "id": "demo-nt1",
+    "name": "新北市板橋區",
+    "city": "新北市",
+    "district": "板橋區",
+    "note": "門市與到府需求"
+  },
+  {
+    "id": "demo-tc1",
+    "name": "臺中市西區",
+    "city": "臺中市",
+    "district": "西區",
+    "note": "門市與到府需求"
+  }
+]

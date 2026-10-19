@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#1a237e">
+  <meta name="description" content="全國智家｜全國智慧居家。家電不會用？我們一步一步教您，從日常教學到服務需求，找到適合您的下一步。">
+  <title>全國智家｜全國智慧居家</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳到主要內容</a>
+  <aside class="sidebar" aria-label="主要導覽">
+    <a href="#home" class="brand"><span class="brand-mark" aria-hidden="true"></span><span>全國智家<small>全國智慧居家</small></span></a>
+    <div class="side-label">每一天，都有我們陪您</div>
+    <nav id="side-nav"></nav>
+    <div class="side-bottom"><div class="care-dot"></div><strong>看得懂・學得會<br>找得到人</strong><p>一次一個步驟，<br>照自己的速度慢慢學。</p><a href="#welcome" class="demo-link">第一次使用 <span aria-hidden="true">↗</span></a></div>
+  </aside>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="breadcrumb"><button class="back-btn" id="back" aria-label="返回上一頁">← <span>返回</span></button><span id="page-label">安心使用每一天</span></div>
+      <div class="access-tools" aria-label="閱讀輔助"><button id="font-toggle" aria-label="切換字體大小，目前標準">字體：標準</button><button id="contrast-toggle" aria-pressed="false">高對比</button><button id="speak-page" aria-pressed="false">朗讀本頁</button></div>
+    </header>
+    <main id="main" tabindex="-1"></main>
+    <footer class="page-footer"><span>全國智家｜全國智慧居家</span><nav aria-label="其他資訊"><a href="#about">關於服務</a><a href="#requests">我的服務需求</a><a href="#staff">工作人員專區</a></nav></footer>
+  </div>
+  <nav class="mobile-nav" id="mobile-nav" aria-label="行動版主要導覽"></nav>
+  <div class="toast" role="status" aria-live="polite" id="toast" hidden></div>
+  <dialog id="modal" aria-labelledby="modal-title"><div id="modal-body"></div><form method="dialog"><button class="btn secondary" id="modal-close">關閉視窗</button></form></dialog>
+  <script src="data.js"></script>
+  <script src="icons.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

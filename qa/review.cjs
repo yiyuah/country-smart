@@ -1,0 +1,26 @@
+const {chromium}=require('C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path');
+const root=path.resolve(__dirname,'..'),url='file:///'+root.replace(/\\/g,'/')+'/index.html';
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'}),results=[];
+ const page=await browser.newPage({viewport:{width:1440,height:1100},reducedMotion:'reduce'}),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ const settle=()=>page.waitForFunction(()=>document.querySelector('main')?.dataset.routeKey===(location.hash.slice(1)||'home'));
+ const go=async route=>{await page.goto(url+'#'+route);await settle()};
+ try{
+  const legacy={appliances:[{id:'sample-w',type:'washer',room:'陽台'},{id:'personal-fridge',type:'fridge',room:'廚房'}],events:[],notes:['已確認家電資料'],lastBooking:{id:'DEMO-OLD',type:'家電操作教學',place:'home',store:'demo-tp1',device:'washer',problem:'洗衣模式怎麼選',date:'2026/10/20',time:'上午 09:00–12:00'}};
+  await page.addInitScript(value=>{if(!sessionStorage.getItem('migration-loaded')){localStorage.setItem('zhijia-v1',JSON.stringify(value));sessionStorage.setItem('migration-loaded','1')}},legacy);
+  await go('my');assert.equal(await page.locator('.appliance-row').count(),2);assert.doesNotMatch(await page.locator('main').innerText(),/ZJ-|虛擬|本機家電分類/);
+  await go('requests');assert.equal(await page.locator('main article').count(),1);await page.reload();await settle();assert.equal(await page.locator('main article').count(),1);
+  await go('advisor');assert.match(await page.locator('.event-list').innerText(),/已確認家電資料/);results.push('舊家電、服務摘要、諮詢紀錄升級保留，重新載入不重複搬移');
+  await go('learn?type=washer');await page.locator('[data-action="lesson"]').nth(1).click();await settle();await page.locator('[data-action="need-help"]').click();await settle();await page.locator('[data-action="phone"]').click();await settle();await page.locator('[data-action="phone-interest"]').click();await page.reload();await settle();assert.match(await page.locator('main').innerText(),/上次儲存的諮詢重點/);assert.match(await page.locator('main').innerText(),/洗衣模式怎麼選/);results.push('諮詢重點儲存後可重新查看');
+  await go('home');await page.locator('#side-nav a[href="#my"]').click();await settle();await page.locator('[data-action="delete-device"]').first().click();await page.goBack();await settle();assert.equal(await page.locator('#modal').evaluate(d=>d.open),false);results.push('確認視窗開啟時按瀏覽器返回，不會殘留在新頁面');
+  await go('home');assert.equal(await page.locator('#main').evaluate(el=>getComputedStyle(el).outlineStyle),'none');await page.screenshot({path:path.join(__dirname,'screenshots','home-desktop.png'),fullPage:true});
+  await go('help');await page.screenshot({path:path.join(__dirname,'screenshots','help-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(__dirname,'screenshots','help-mobile.png'),fullPage:true});
+  await page.setViewportSize({width:320,height:844});await page.locator('#font-toggle').click();await page.locator('#font-toggle').click();assert.equal(await page.locator('.access-tools button').evaluateAll(els=>els.every(el=>el.scrollWidth<=el.clientWidth+1)),true);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),true);results.push('320px 超大字模式閱讀工具不斷字或溢出');
+  const cam=await browser.newPage();await cam.addInitScript(()=>{navigator.mediaDevices.getUserMedia=async()=>{const c=document.createElement('canvas');c.width=640;c.height=480;const x=c.getContext('2d');x.fillStyle='#ccd9ff';x.fillRect(0,0,640,480);const stream=c.captureStream(2);window.testStream=stream;return stream}});
+  await cam.goto(url+'#scan');await cam.locator('[data-action="camera"]').click();await cam.locator('[data-action="capture"]').waitFor();await cam.waitForFunction(()=>!document.querySelector('[data-action="capture"]').disabled);await cam.locator('[data-action="capture"]').click();await cam.locator('.upload-preview').waitFor();assert.equal(await cam.evaluate(()=>window.testStream.getVideoTracks()[0].readyState),'ended');await cam.goto(url+'#scan');await cam.locator('[data-action="camera"]').click();await cam.waitForFunction(()=>!document.querySelector('[data-action="capture"]').disabled);await cam.evaluate(()=>{Object.defineProperty(document,'hidden',{value:true,configurable:true});document.dispatchEvent(new Event('visibilitychange'))});assert.equal(await cam.locator('[data-action="capture"]').isDisabled(),true);assert.equal(await cam.evaluate(()=>window.testStream.getVideoTracks()[0].readyState),'ended');await cam.close();results.push('以虛擬相機測試拍照成功、離開與背景關閉鏡頭，停用過期擷取按鈕');
+  assert.deepEqual(errors,[]);results.push('桌機與手機版面目視複核，補充檢查無執行錯誤');
+  const report=JSON.parse(fs.readFileSync(path.join(__dirname,'results.json'),'utf8'));report.results.push(...results);report.reviewedAt=new Date().toISOString();fs.writeFileSync(path.join(__dirname,'results.json'),JSON.stringify(report,null,2));results.forEach(r=>console.log('PASS '+r));
+ }finally{await browser.close()}
+})().catch(e=>{console.error(e);process.exitCode=1});
