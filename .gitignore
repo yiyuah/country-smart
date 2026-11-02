@@ -1,0 +1,13 @@
+# Local review tools, reports and unrelated document outputs
+/qa/
+/tools/
+/output/
+/tmp/
+/site/
+/DEPLOYMENT.md
+node_modules/
+.pnpm-store/
+*.zip
+*.tar.gz
+.DS_Store
+Thumbs.db
