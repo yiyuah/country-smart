@@ -121,33 +121,16 @@
   const empty = (title,text,path='home',action='返回首頁') => `<section class="panel empty">${icon('info',52)}<h2>${title}</h2><p class="muted">${text}</p>${link(action,path,'primary')}</section>`;
 
   function stopSpeech() {
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
-    utterance = null; readingPage = false;
-    $('#speak-page').textContent = '朗讀本頁';
-    $('#speak-page').setAttribute('aria-pressed','false');
+    window.ZhijiaReader.stop(); utterance=null;readingPage=false;
   }
-  function speak(text, onDone) {
-    stopSpeech();
-    if (!window.speechSynthesis || typeof window.SpeechSynthesisUtterance !== 'function') {
-      toast('此瀏覽器不支援文字朗讀，您可以繼續閱讀畫面上的步驟');
-      onDone?.(); return false;
-    }
-    const speech = new SpeechSynthesisUtterance(text);
-    utterance = speech; speech.lang = 'zh-TW'; speech.rate = .85;
-    speech.onend = () => { if (utterance === speech) { utterance=null; readingPage=false; $('#speak-page').textContent='朗讀本頁'; $('#speak-page').setAttribute('aria-pressed','false'); onDone?.(); } };
-    speech.onerror = event => {
-      if (utterance !== speech) return;
-      utterance=null; readingPage=false; $('#speak-page').textContent='朗讀本頁'; $('#speak-page').setAttribute('aria-pressed','false');
-      if (!['interrupted','canceled'].includes(event.error)) toast('暫時無法朗讀，請使用文字步驟繼續操作');
-      onDone?.();
-    };
-    try { speechSynthesis.speak(speech); return true; } catch { onDone?.(); return false; }
+  function speak(text,onDone) {
+    return window.ZhijiaReader.start(main.querySelector('.lesson-copy') || main,onDone);
   }
   function stopPlayer() { playing=false; playbackToken++; clearTimeout(playbackTimer); playbackTimer=null; }
   function stopCamera() { cameraToken++; if(cameraStream) cameraStream.getTracks().forEach(track=>track.stop()); cameraStream=null; }
   function clearPhoto() { uploadToken++; if(photoURL) URL.revokeObjectURL(photoURL); photoURL=''; }
   function parsePath() {
-    const hash = location.hash.slice(1) || 'home';
+    const hash = location.hash.slice(1) || 'landing';
     const [name,query=''] = hash.split('?');
     return {name,query:new URLSearchParams(query),key:hash};
   }
@@ -198,19 +181,24 @@
     if(route==='help'&&before!=='help') log('help',{...(db.context?{device:db.context.type,issue:db.context.issue}:{}),...(activeLesson?{lesson:activeLesson.id}:{})});
     if(route==='booking') ensureDraft();
     render(); window.scrollTo({top:0,behavior:'instant'}); main.focus({preventScroll:true});
+    const section=params.get('section');
+    if(route==='landing' && ['services','about','process','features','faq','contact'].includes(section)) document.getElementById('landing-'+section)?.scrollIntoView({block:'start',behavior:'instant'});
   }
-  const labels={home:'安心使用每一天',welcome:'第一次使用',scan:'掃描家電',choose:'選擇家電',result:'確認家電',questions:'常見問題',learn:'教學中心',tutorial:'一步一步學',feedback:'學習回饋',complete:'學習完成',help:'找人協助',phone:'電話諮詢',stores:'選擇服務地區',booking:'整理服務需求',booked:'服務需求摘要',requests:'我的服務需求',my:'我的家電',device:'家電資料',edit:'管理家電',about:'服務介紹',cycle:'服務流程',guide:'使用導覽',staff:'工作人員專區',advisor:'顧問工作台',dashboard:'使用紀錄'};
+  const labels={landing:'把科技變簡單，把關心帶回家',home:'安心使用每一天',welcome:'第一次使用',scan:'掃描家電',choose:'選擇家電',result:'確認家電',questions:'常見問題',learn:'教學中心',tutorial:'一步一步學',feedback:'學習回饋',complete:'學習完成',help:'找人協助',phone:'電話諮詢',stores:'選擇服務地區',booking:'整理服務需求',booked:'服務需求摘要',requests:'我的服務需求',my:'我的家電',device:'家電資料',edit:'管理家電',about:'服務介紹',cycle:'服務流程',guide:'使用導覽',staff:'工作人員專區',advisor:'顧問工作台',dashboard:'使用紀錄'};
   function render(focusTarget='') {
+    window.ZhijiaReader.stop();
+    document.body.classList.remove('nav-open');
+    $('#brand-menu').setAttribute('aria-expanded','false');
     $('#page-label').textContent=labels[route]||'全國智家';
     document.title=(labels[route]||'全國智家')+'｜全國智家｜全國智慧居家';
-    $('#back').disabled=route==='home'&&pageIndex===0;
+    $('#back').disabled=['landing','home'].includes(route)&&pageIndex===0;
     const active=key=>route===key||(key==='scan'&&['choose','result','questions'].includes(route))||(key==='learn'&&['tutorial','feedback','complete'].includes(route))||(key==='my'&&['device','edit'].includes(route))||(key==='help'&&['phone','stores','booking','booked','requests'].includes(route));
     const nav=[['home','首頁','home'],['scan','掃描家電','scan'],['my','我的家電','devices'],['learn','教學中心','book'],['help','找人協助','help'],['about','服務介紹','heart']];
     $('#side-nav').innerHTML=nav.map(([key,title,ic])=>`<a class="nav-item ${active(key)?'active':''}" href="#${key}" ${active(key)?'aria-current="page"':''}>${icon(ic)}${title}</a>`).join('');
     $('#mobile-nav').innerHTML=nav.filter(([key])=>['home','my','learn','help'].includes(key)).map(([key,title,ic])=>`<a href="#${key}" class="${active(key)?'active':''}" ${active(key)?'aria-current="page"':''}>${icon(ic)}${title}</a>`).join('');
-    const pages={home:homePage,welcome:welcomePage,scan:scanPage,choose:choosePage,result:resultPage,questions:questionsPage,learn:learnPage,tutorial:tutorialPage,feedback:feedbackPage,complete:completePage,help:helpPage,phone:phonePage,stores:storesPage,booking:bookingPage,booked:bookedPage,requests:requestsPage,my:myPage,device:devicePage,edit:editPage,about:aboutPage,cycle:cyclePage,guide:guidePage,staff:staffPage,advisor:advisorPage,dashboard:dashboardPage};
+    const pages={landing:()=>window.ZhijiaLanding(icon,promoVideo),home:homePage,welcome:welcomePage,scan:scanPage,choose:choosePage,result:resultPage,questions:questionsPage,learn:learnPage,tutorial:tutorialPage,feedback:feedbackPage,complete:completePage,help:helpPage,phone:phonePage,stores:storesPage,booking:bookingPage,booked:bookedPage,requests:requestsPage,my:myPage,device:devicePage,edit:editPage,about:aboutPage,cycle:cyclePage,guide:guidePage,staff:staffPage,advisor:advisorPage,dashboard:dashboardPage};
     main.innerHTML=(tour?tourBanner():'')+(pages[route]||(()=>head('找不到這個頁面')+empty('連結可能已變更','您可以從首頁重新選擇需要的功能')))();
-    renderedKey=location.hash.slice(1)||'home'; main.dataset.routeKey=renderedKey;
+    renderedKey=location.hash.slice(1)||'landing'; main.dataset.routeKey=renderedKey;
     document.body.dataset.page=route;
     applyPrefs(); bindMedia();
     if(focusTarget) $(focusTarget)?.focus({preventScroll:true});
@@ -604,11 +592,16 @@
   $('#font-toggle').addEventListener('click',()=>{prefs.font=(prefs.font+1)%3;applyPrefs();toast('已切換為'+['標準','大字','超大字'][prefs.font])});
   $('#contrast-toggle').addEventListener('click',()=>{prefs.contrast=!prefs.contrast;applyPrefs();toast(prefs.contrast?'已開啟高對比':'已恢復標準配色')});
   $('#speak-page').addEventListener('click',()=>{
-    if(readingPage){stopSpeech();return;}
+    if(window.ZhijiaReader.state!=='idle'){stopPlayer();stopSpeech();return;}
     if(playing){stopPlayer();render();}
-    const clone=main.cloneNode(true);clone.querySelectorAll('button,nav,video,.player-controls,.scenario-banner').forEach(n=>n.remove());
-    if(speak(clone.innerText||clone.textContent)){readingPage=true;$('#speak-page').textContent='停止朗讀';$('#speak-page').setAttribute('aria-pressed','true');}
+    window.ZhijiaReader.start(route==='tutorial' ? main.querySelector('.lesson-copy') || main : main);
   });
+  document.addEventListener('reader-unavailable',()=>toast('此瀏覽器不支援文字朗讀，您可以繼續閱讀畫面上的步驟'));
+  $('#speech-stop').addEventListener('click',()=>{if(playing){stopPlayer();render();}});
+  $('#brand-menu').addEventListener('click',()=>{
+    const open=document.body.classList.toggle('nav-open');$('#brand-menu').setAttribute('aria-expanded',String(open));
+  });
+  document.addEventListener('keydown',event=>{if(event.key==='Escape'&&document.body.classList.contains('nav-open')){document.body.classList.remove('nav-open');$('#brand-menu').setAttribute('aria-expanded','false');$('#brand-menu').focus();}});
   $('#back').addEventListener('click',()=>{
     if(pageIndex>0){history.back();return;}
     const fallback={tutorial:validType(selectedType)?'learn?type='+selectedType:'learn',questions:'choose',result:'choose',feedback:activeLesson?lessonPath():'learn',complete:'learn',device:'my',edit:'my',booked:'requests',phone:'help',stores:'help',booking:'help',advisor:'staff',dashboard:'staff'};
